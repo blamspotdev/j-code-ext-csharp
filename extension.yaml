@@ -1,0 +1,47 @@
+id: jcode.lang.csharp
+name: C# Language Pack
+publisher: jcode
+version: 0.1.0
+type: language
+description: Coding suggestions, a basic formatter, and helpers for C#.
+language:
+  id: csharp
+  extensions: [".cs", ".csx"]
+  comment:
+    line: "//"
+    blockStart: "/*"
+    blockEnd: "*/"
+  formatter:
+    # Best-effort runtime formatter (runs in the embedded distro). {{file}} is the
+    # guest path. Falls back to the basic rules below when no toolchain is present.
+    command: "dotnet format --include {{file}} 2>/dev/null || true"
+    indent: 4
+    trimTrailingWhitespace: true
+    insertFinalNewline: true
+  completions:
+    - label: cw
+      detail: Console.WriteLine
+      insert: "Console.WriteLine($0);"
+    - label: prop
+      detail: Auto-property
+      insert: "public $1 $2 { get; set; }"
+    - label: ctor
+      detail: Constructor
+      insert: "public $1($2)\n{\n    $0\n}"
+    - label: forr
+      detail: for loop
+      insert: "for (int i = 0; i < $1; i++)\n{\n    $0\n}"
+    - label: foreach
+      detail: foreach loop
+      insert: "foreach (var $1 in $2)\n{\n    $0\n}"
+    - label: cls
+      detail: Class
+      insert: "public class $1\n{\n    $0\n}"
+    - label: asyncm
+      detail: Async method
+      insert: "public async Task $1()\n{\n    $0\n}"
+  helpers:
+    - title: Add using
+      snippet: "using $1;"
+    - title: Null-coalescing guard
+      snippet: "$1 ??= $2;"
