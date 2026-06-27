@@ -11,6 +11,15 @@ language:
     line: "//"
     blockStart: "/*"
     blockEnd: "*/"
+  strings: ["\"", "'"]
+  keywords: [public, private, protected, internal, static, readonly, const, class, struct,
+    interface, enum, namespace, using, void, return, if, else, for, foreach, while, do,
+    switch, case, default, break, continue, new, this, base, null, true, false, async,
+    await, try, catch, finally, throw, get, set, override, virtual, abstract, sealed,
+    partial, is, as, in, out, ref, params, yield, lock, using, record]
+  types: [int, long, short, byte, sbyte, uint, ulong, ushort, bool, char, string, float,
+    double, decimal, object, var, dynamic, void, Task, List, Dictionary, IEnumerable,
+    Span, Array, Nullable]
   formatter:
     # Best-effort runtime formatter (runs in the embedded distro). {{file}} is the
     # guest path. Falls back to the basic rules below when no toolchain is present.
