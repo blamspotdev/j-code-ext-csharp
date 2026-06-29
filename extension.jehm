@@ -19,7 +19,7 @@ suggests:
   lsps: [csharp-language-server]
   extensions: []
 images:
-  icon: ""
+  icon: media/icon.png
   samples: []
   walkthrough: []
 entry:
