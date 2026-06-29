@@ -2,7 +2,7 @@
 
 A JCode **language** extension for C#: coding suggestions (snippets), a basic
 formatter, and helpers. Installed through the
-[JCode Marketplace](https://github.com/janrick123/j-code-marketplace).
+[JCode Marketplace](https://github.com/blamspotdev/j-code-marketplace).
 
 See [`extension.yaml`](extension.yaml) for the manifest.
 
