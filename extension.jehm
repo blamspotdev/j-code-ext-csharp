@@ -2,7 +2,7 @@
 schema: 1
 uniqueName: jcode.lang.csharp
 name: C# Language Pack
-version: 0.2.0
+version: 0.2.1
 type: language
 publisher: jcode
 shortDescription: Coding suggestions, a basic formatter, and helpers for C#.
@@ -19,7 +19,7 @@ suggests:
   lsps: [csharp-language-server]
   extensions: []
 images:
-  icon: media/icon.png
+  icon: media/icon.pngmedia/icon.png
   samples: []
   walkthrough: []
 entry:

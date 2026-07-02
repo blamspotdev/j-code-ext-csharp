@@ -1,7 +1,7 @@
 id: jcode.lang.csharp
 name: C# Language Pack
 publisher: jcode
-version: 0.2.0
+version: 0.2.1
 type: language
 description: Coding suggestions, a basic formatter, and helpers for C#.
 language:
