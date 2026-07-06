@@ -1,0 +1,40 @@
+id: aspnet-webapi
+name: ASP.NET Core Web API
+description: A backend-only ASP.NET Core Web API (no client).
+requires:
+  - dotnet
+inputs:
+  - id: dotnetTfm
+    label: .NET version
+    type: select
+    options: ["net8.0", "net9.0", "net10.0"]
+    default: "net8.0"
+recipe:
+  - label: Create Web API
+    run: dotnet new webapi -o "{{projectDir}}" --no-https
+  - label: Set target framework
+    run: |
+      for cs in "{{projectDir}}"/*.csproj; do
+        sed -i "s#<TargetFramework>[^<]*</TargetFramework>#<TargetFramework>{{dotnetTfm}}</TargetFramework>#" "$cs"
+      done
+  - label: Configure Build & Run
+    run: |
+      mkdir -p "{{projectDir}}/.jcode"
+      cat > "{{projectDir}}/.jcode/run.yaml" <<'YAML'
+      version: 1
+      name: ASP.NET Core Web API (dev)
+      readyPort: 5080
+      terminals:
+        - label: API
+          command: |
+            clear
+            set -e
+            PROJ="{{projectDir}}"
+            SRV="$HOME/.jcode-run/{{name}}-api"
+            CSPROJ=$(ls "$PROJ"/*.csproj | head -1)
+            echo '== J Code: ASP.NET Core Web API =='
+            rm -rf "$SRV"
+            dotnet build "$CSPROJ" -c Debug -o "$SRV" --nologo
+            cd "$SRV"
+            ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "$CSPROJ" .csproj).dll"
+      YAML

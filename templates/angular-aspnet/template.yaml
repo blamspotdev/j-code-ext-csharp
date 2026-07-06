@@ -1,0 +1,72 @@
+id: angular-aspnet
+name: Angular and ASP.NET Core
+description: An Angular client served by an ASP.NET Core minimal-API backend.
+requires:
+  - dotnet
+  - nodejs
+inputs:
+  - id: dotnetTfm
+    label: .NET version
+    type: select
+    options: ["net8.0", "net9.0", "net10.0"]
+    default: "net8.0"
+recipe:
+  - label: Install Angular CLI
+    run: npm install -g @angular/cli
+  - label: Create ASP.NET Core server
+    run: dotnet new web -o "{{projectDir}}/Server"
+  - label: Set target framework
+    run: |
+      for cs in "{{projectDir}}/Server"/*.csproj; do
+        sed -i "s#<TargetFramework>[^<]*</TargetFramework>#<TargetFramework>{{dotnetTfm}}</TargetFramework>#" "$cs"
+      done
+  - label: Scaffold Angular client
+    workdir: "{{hostStaging}}"
+    run: ng new client --skip-git --defaults --skip-install
+  - label: Install client dependencies
+    workdir: "{{hostStaging}}/client"
+    run: npm install
+  - label: Build client
+    workdir: "{{hostStaging}}/client"
+    run: ng build
+  - label: Publish client into server wwwroot
+    run: mkdir -p "{{projectDir}}/Server/wwwroot" && cp -r "{{hostStaging}}/client/dist/client/browser/." "{{projectDir}}/Server/wwwroot/" 2>/dev/null || cp -r "{{hostStaging}}/client/dist/." "{{projectDir}}/Server/wwwroot/"
+  - label: Copy client source into project
+    run: cd "{{hostStaging}}/client" && tar --exclude=node_modules --exclude=dist -cf - . | (mkdir -p "{{projectDir}}/client" && cd "{{projectDir}}/client" && tar -xf -)
+  - label: Configure Build & Run
+    run: |
+      mkdir -p "{{projectDir}}/.jcode"
+      cat > "{{projectDir}}/.jcode/run.yaml" <<'YAML'
+      version: 1
+      name: Angular + ASP.NET Core (dev)
+      readyPort: 4200
+      terminals:
+        - label: Server
+          command: |
+            clear
+            set -e
+            PROJ="{{projectDir}}"
+            SRV="$HOME/.jcode-run/{{name}}-server"
+            echo '== J Code: Server (ASP.NET Core - Development) =='
+            CSPROJ=$(ls "$PROJ/Server"/*.csproj | head -1)
+            echo '[1/2] Building server (dotnet build, Debug)...'
+            rm -rf "$SRV"
+            dotnet build "$CSPROJ" -c Debug -o "$SRV" --nologo
+            echo '[2/2] Starting server on http://localhost:5080 (Development)...'
+            cd "$SRV"
+            ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "$CSPROJ" .csproj).dll"
+        - label: Client
+          command: |
+            clear
+            set -e
+            CLIENT="{{projectDir}}/client"
+            STAGE="$HOME/.jcode-run/{{name}}-client"
+            echo '== J Code: Client (Angular dev server) =='
+            export npm_config_fund=false npm_config_audit=false
+            echo '[1/2] Staging client + installing deps (npm install)...'
+            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "$CLIENT/." "$STAGE/"
+            cd "$STAGE"
+            npm install
+            echo '[2/2] Starting Angular dev server on http://localhost:4200 ...'
+            npx ng serve --host 0.0.0.0 --port 4200 --disable-host-check
+      YAML
