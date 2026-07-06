@@ -1,0 +1,88 @@
+id: aspnet-vite-react-ts
+name: C# ASP.NET Core with Vite + React TypeScript
+description: An ASP.NET Core API with a Vite + React (TypeScript) client.
+requires:
+  - dotnet
+  - nodejs
+inputs:
+  - id: dotnetTfm
+    label: .NET version
+    type: select
+    options: ["net8.0", "net9.0", "net10.0"]
+    default: "net8.0"
+recipe:
+  - label: Create ASP.NET Core server
+    run: dotnet new web -o "{{projectDir}}/Server"
+  - label: Set target framework
+    run: |
+      for cs in "{{projectDir}}/Server"/*.csproj; do
+        sed -i "s#<TargetFramework>[^<]*</TargetFramework>#<TargetFramework>{{dotnetTfm}}</TargetFramework>#" "$cs"
+      done
+  - label: Serve the built client from the server
+    run: |
+      cat > "{{projectDir}}/Server/Program.cs" <<'EOF'
+      var builder = WebApplication.CreateBuilder(args);
+      var app = builder.Build();
+
+      // Serve the Vite-built React client published into wwwroot.
+      app.UseDefaultFiles();
+      app.UseStaticFiles();
+
+      // Example API endpoint the client can call.
+      app.MapGet("/api/hello", () => "Hello from ASP.NET Core");
+
+      // SPA fallback: any non-file route returns index.html so client routing works.
+      app.MapFallbackToFile("index.html");
+
+      app.Run();
+      EOF
+  - label: Scaffold Vite React (TypeScript) client
+    workdir: "{{hostStaging}}"
+    run: CI=1 npm create vite@latest client -- --template react-ts </dev/null
+  - label: Install client dependencies
+    workdir: "{{hostStaging}}/client"
+    run: npm install
+  - label: Build client
+    workdir: "{{hostStaging}}/client"
+    run: npm run build
+  - label: Publish client into server wwwroot
+    run: mkdir -p "{{projectDir}}/Server/wwwroot" && cp -r "{{hostStaging}}/client/dist/." "{{projectDir}}/Server/wwwroot/"
+  - label: Copy client source into project
+    run: cd "{{hostStaging}}/client" && tar --exclude=node_modules --exclude=dist -cf - . | (mkdir -p "{{projectDir}}/client" && cd "{{projectDir}}/client" && tar -xf -)
+  - label: Configure Build & Run
+    run: |
+      mkdir -p "{{projectDir}}/.jcode"
+      cat > "{{projectDir}}/.jcode/run.yaml" <<'YAML'
+      version: 1
+      name: ASP.NET Core + Vite React (dev)
+      readyPort: 5173
+      terminals:
+        - label: Server
+          command: |
+            clear
+            set -e
+            PROJ="{{projectDir}}"
+            SRV="$HOME/.jcode-run/{{name}}-server"
+            echo '== J Code: Server (ASP.NET Core - Development) =='
+            CSPROJ=$(ls "$PROJ/Server"/*.csproj | head -1)
+            echo '[1/2] Building server (dotnet build, Debug)...'
+            rm -rf "$SRV"
+            dotnet build "$CSPROJ" -c Debug -o "$SRV" --nologo
+            echo '[2/2] Starting server on http://localhost:5080 (Development)...'
+            cd "$SRV"
+            ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "$CSPROJ" .csproj).dll"
+        - label: Client
+          command: |
+            clear
+            set -e
+            CLIENT="{{projectDir}}/client"
+            STAGE="$HOME/.jcode-run/{{name}}-client"
+            echo '== J Code: Client (Vite dev server) =='
+            export npm_config_fund=false npm_config_audit=false
+            echo '[1/2] Staging client + installing deps (npm install)...'
+            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "$CLIENT/." "$STAGE/"
+            cd "$STAGE"
+            npm install
+            echo '[2/2] Starting Vite dev server on http://localhost:5173 ...'
+            npm run dev -- --host 0.0.0.0 --port 5173
+      YAML

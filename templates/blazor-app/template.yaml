@@ -1,0 +1,40 @@
+id: blazor-app
+name: Blazor Web App
+description: A C# Blazor Web App (interactive server rendering).
+requires:
+  - dotnet
+inputs:
+  - id: dotnetTfm
+    label: .NET version
+    type: select
+    options: ["net8.0", "net9.0", "net10.0"]
+    default: "net8.0"
+recipe:
+  - label: Create Blazor Web App
+    run: dotnet new blazor -o "{{projectDir}}"
+  - label: Set target framework
+    run: |
+      for cs in "{{projectDir}}"/*.csproj; do
+        sed -i "s#<TargetFramework>[^<]*</TargetFramework>#<TargetFramework>{{dotnetTfm}}</TargetFramework>#" "$cs"
+      done
+  - label: Configure Build & Run
+    run: |
+      mkdir -p "{{projectDir}}/.jcode"
+      cat > "{{projectDir}}/.jcode/run.yaml" <<'YAML'
+      version: 1
+      name: Blazor Web App (dev)
+      readyPort: 5080
+      terminals:
+        - label: Web
+          command: |
+            clear
+            set -e
+            PROJ="{{projectDir}}"
+            SRV="$HOME/.jcode-run/{{name}}-web"
+            CSPROJ=$(ls "$PROJ"/*.csproj | head -1)
+            echo '== J Code: Blazor Web App =='
+            rm -rf "$SRV"
+            dotnet build "$CSPROJ" -c Debug -o "$SRV" --nologo
+            cd "$SRV"
+            ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "$CSPROJ" .csproj).dll"
+      YAML

@@ -1,9 +1,14 @@
 id: jcode.lang.csharp
 name: C# Language Pack
 publisher: jcode
-version: 0.2.1
+version: 0.3.0
 type: language
-description: Coding suggestions, a basic formatter, and helpers for C#.
+description: Coding suggestions, a basic formatter, helpers, and .NET project templates for C#.
+templates:
+  - aspnet-webapi
+  - blazor-app
+  - aspnet-vite-react-ts
+  - angular-aspnet
 language:
   id: csharp
   extensions: [".cs", ".csx"]
@@ -54,3 +59,18 @@ language:
       snippet: "using $1;"
     - title: Null-coalescing guard
       snippet: "$1 ??= $2;"
+
+# --- header fields merged from extension.jehm ---
+shortDescription: Coding suggestions, a basic formatter, helpers, and .NET project templates for C#.
+minJCodeVersion: 1.0.0
+targetJCodeVersion: 1.0.0
+category: Languages
+subcategory: C#
+images:
+  icon: media/icon.png
+  samples: []
+  walkthrough: []
+entry:
+  manifest: extension.yaml
+  ui: null
+  libs: []
