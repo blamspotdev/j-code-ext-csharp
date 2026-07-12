@@ -8,8 +8,10 @@ inputs:
   - id: dotnetTfm
     label: .NET version
     type: select
-    options: ["net8.0", "net9.0", "net10.0"]
-    default: "net8.0"
+    # Live from installed SDKs; falls back to the static list below when the runtime isn't ready.
+    optionsCommand: "/usr/local/bin/dotnet --list-sdks 2>/dev/null | awk '{print $1}' | cut -d. -f1-2 | sort -Vru | sed 's/^/net/'"
+    options: ["net10.0", "net9.0", "net8.0"]
+    default: "net10.0"
 recipe:
   - label: Install Angular CLI
     run: npm install -g @angular/cli

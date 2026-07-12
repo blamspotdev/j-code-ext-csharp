@@ -1,8 +1,13 @@
 id: jcode.lang.csharp
 name: C# Language Pack
 publisher: jcode
-version: 0.3.0
+version: 0.3.1
 type: language
+requires:
+  lsps: [csharp-ls]
+  sdks: [dotnet]
+suggests:
+  dbg: [netcoredbg]
 description: Coding suggestions, a basic formatter, helpers, and .NET project templates for C#.
 templates:
   - aspnet-webapi
