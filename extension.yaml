@@ -1,7 +1,7 @@
 id: jcode.lang.csharp
 name: C# Language Pack
 publisher: jcode
-version: 0.3.1
+version: 0.3.3
 type: language
 requires:
   lsps: [csharp-ls]
@@ -14,6 +14,67 @@ templates:
   - blazor-app
   - aspnet-vite-react-ts
   - angular-aspnet
+contributes:
+  # Run presets offered on the Configure Run page when the project contains ALL of `requires`
+  # (globs; with a `/` matches the project-relative path, else the file name). Substitutions:
+  # {{projectDir}} = project guest root; {{file}}/{{dir}} = the FIRST required file's guest
+  # path/dir; {{fileN}}/{{dirN}} (1-based) = each requires glob's first match.
+  runConfigPresets:
+    # ASP.NET Core + React (dev): needs a .csproj (the server) AND a package.json (the React
+    # client). Server builds to ext4 (noexec /workspace) and runs the managed DLL; the Vite
+    # client stages to ext4 and serves with HMR. The browser opens the Vite port.
+    - id: aspnet-react-dev
+      label: ASP.NET Core + React (dev)
+      requires: ["**/*.csproj", "**/package.json"]
+      readyPort: 5173
+      terminals:
+        - label: Server
+          command: |
+            clear
+            set -e
+            OUT="$HOME/.jcode-run/aspnet-server"
+            echo '== J Code: ASP.NET Core server (Development) =='
+            rm -rf "$OUT"
+            dotnet build "{{file1}}" -c Debug -o "$OUT" --nologo
+            cd "$OUT"
+            ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' \
+              dotnet "$(basename "{{file1}}" .csproj).dll"
+        - label: Client
+          command: |
+            clear
+            set -e
+            STAGE="$HOME/.jcode-run/aspnet-react-client"
+            echo '== J Code: React client (Vite dev server) =='
+            export npm_config_fund=false npm_config_audit=false
+            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "{{dir2}}/." "$STAGE/"
+            cd "$STAGE"
+            npm install
+            npm run dev -- --host 0.0.0.0 --port 5173
+    # Plain ASP.NET Core / .NET run: any .csproj.
+    - id: dotnet-run
+      label: .NET run (.csproj)
+      requires: ["**/*.csproj"]
+      readyPort: 5080
+      terminals:
+        - label: Run
+          command: |
+            clear
+            set -e
+            OUT="$HOME/.jcode-run/dotnet-run"
+            rm -rf "$OUT"
+            dotnet build "{{file}}" -c Debug -o "$OUT" --nologo
+            cd "$OUT"
+            ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "{{file}}" .csproj).dll"
+    # Whole-solution build.
+    - id: dotnet-sln-build
+      label: .NET solution build
+      requires: ["*.sln"]
+      terminals:
+        - label: Build
+          command: |
+            clear
+            set -e
+            dotnet build "{{file}}" --nologo
 language:
   id: csharp
   extensions: [".cs", ".csx"]
