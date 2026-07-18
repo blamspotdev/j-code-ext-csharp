@@ -59,32 +59,26 @@ recipe:
       name: ASP.NET Core + Vite React (dev)
       readyPort: 5173
       terminals:
-        - label: Server
+        - label: Run
           command: |
             clear
             set -e
             PROJ="{{projectDir}}"
             SRV="$HOME/.jcode-run/{{name}}-server"
-            echo '== J Code: Server (ASP.NET Core - Development) =='
+            STAGE="$HOME/.jcode-run/{{name}}-client"
+            export npm_config_fund=false npm_config_audit=false
             CSPROJ=$(ls "$PROJ/Server"/*.csproj | head -1)
-            echo '[1/2] Building server (dotnet build, Debug)...'
+            echo '== J Code: ASP.NET Core + Vite React (dev) =='
+            echo '[1/3] Building server (dotnet build, Debug)...'
             rm -rf "$SRV"
             dotnet build "$CSPROJ" -c Debug -o "$SRV" --nologo
-            echo '[2/2] Starting server on http://localhost:5080 (Development)...'
-            cd "$SRV"
-            ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "$CSPROJ" .csproj).dll"
-        - label: Client
-          command: |
-            clear
-            set -e
-            CLIENT="{{projectDir}}/client"
-            STAGE="$HOME/.jcode-run/{{name}}-client"
-            echo '== J Code: Client (Vite dev server) =='
-            export npm_config_fund=false npm_config_audit=false
-            echo '[1/2] Staging client + installing deps (npm install)...'
-            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "$CLIENT/." "$STAGE/"
+            echo '[2/3] Staging client + installing deps (npm install)...'
+            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "$PROJ/client/." "$STAGE/"
+            ( cd "$STAGE" && npm install )
+            echo '[3/3] Starting server (:5080, background) + Vite client (:5173)...'
+            ( cd "$SRV" && ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' exec dotnet "$(basename "$CSPROJ" .csproj).dll" ) &
+            SRV_PID=$!
+            trap 'kill "$SRV_PID" 2>/dev/null' INT TERM EXIT
             cd "$STAGE"
-            npm install
-            echo '[2/2] Starting Vite dev server on http://localhost:5173 ...'
             npm run dev -- --host 0.0.0.0 --port 5173
       YAML
