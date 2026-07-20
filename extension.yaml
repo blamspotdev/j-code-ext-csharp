@@ -1,12 +1,12 @@
 id: jcode.lang.csharp
 name: C# Dev Pack
 publisher: jcode
-version: 0.3.5
+version: 0.3.6
 type: language
 requires:
   lsps: [csharp-ls]
-  sdks: [dotnet]
 suggests:
+  sdks: [dotnet]
   dbg: [netcoredbg]
 description: Coding suggestions, a basic formatter, helpers, and .NET project templates for C#.
 templates:
