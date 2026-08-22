@@ -50,7 +50,18 @@ recipe:
   - label: Publish client into server wwwroot
     run: mkdir -p "{{projectDir}}/Server/wwwroot" && cp -r "{{hostStaging}}/client/dist/." "{{projectDir}}/Server/wwwroot/"
   - label: Copy client source into project
-    run: cd "{{hostStaging}}/client" && tar --exclude=node_modules --exclude=dist -cf - . | (mkdir -p "{{projectDir}}/client" && cd "{{projectDir}}/client" && tar -xf -)
+    run: |
+      set -eu
+      cd "{{hostStaging}}/client"
+      tar --exclude=node_modules --exclude=dist -cf - . | (mkdir -p "{{projectDir}}/client" && cd "{{projectDir}}/client" && tar -xf -)
+      # A pipeline reports only its LAST command's status, so a producer that dies half-way still
+      # looks like success and hands back a half-copied project. Steps run under dash, which has no
+      # `pipefail`, so check the one file whose absence makes the result unusable: without a manifest
+      # neither `npm install` nor `npm run dev` can run, and the generated run config cannot work.
+      test -f "{{projectDir}}/client/package.json" || {
+        echo "Copy incomplete: package.json did not reach {{projectDir}}/client." >&2
+        exit 1
+      }
   - label: Configure Build & Run
     run: |
       mkdir -p "{{projectDir}}/.jcode"
