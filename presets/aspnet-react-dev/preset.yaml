@@ -1,0 +1,13 @@
+# ASP.NET Core + React (dev): needs a .csproj (the server) AND a package.json (the React
+# client). Server builds to ext4 (noexec /workspace) and runs the managed DLL; the Vite
+# client stages to ext4 and serves with HMR. The browser opens the Vite port.
+id: aspnet-react-dev
+label: ASP.NET Core + React (dev)
+requires: ["**/*.csproj", "**/package.json"]
+readyPort: 5173
+terminals:
+  # One command: build the server, stage+install the client, run the server in the background
+  # and the Vite client in the foreground. A trap stops the server when the run stops (Ctrl-C)
+  # or the client exits, so the whole full-stack dev run is a single monitored command.
+  - label: Run
+    script: run.sh

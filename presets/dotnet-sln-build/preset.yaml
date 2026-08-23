@@ -1,0 +1,7 @@
+# Whole-solution build.
+id: dotnet-sln-build
+label: .NET solution build
+requires: ["*.sln"]
+terminals:
+  - label: Build
+    script: build.sh
