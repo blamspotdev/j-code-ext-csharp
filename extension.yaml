@@ -1,7 +1,7 @@
 id: jcode.lang.csharp
 name: C# Dev Pack
 publisher: jcode
-version: 0.3.7
+version: 0.3.8
 type: language
 requires:
   lsps: [csharp-ls]
