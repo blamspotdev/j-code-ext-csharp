@@ -16,28 +16,9 @@ recipe:
   - label: Create ASP.NET Core server
     run: dotnet new web -o "{{projectDir}}/Server"
   - label: Set target framework
-    run: |
-      for cs in "{{projectDir}}/Server"/*.csproj; do
-        sed -i "s#<TargetFramework>[^<]*</TargetFramework>#<TargetFramework>{{dotnetTfm}}</TargetFramework>#" "$cs"
-      done
+    script: set-target-framework.sh
   - label: Serve the built client from the server
-    run: |
-      cat > "{{projectDir}}/Server/Program.cs" <<'EOF'
-      var builder = WebApplication.CreateBuilder(args);
-      var app = builder.Build();
-
-      // Serve the Vite-built React client published into wwwroot.
-      app.UseDefaultFiles();
-      app.UseStaticFiles();
-
-      // Example API endpoint the client can call.
-      app.MapGet("/api/hello", () => "Hello from ASP.NET Core");
-
-      // SPA fallback: any non-file route returns index.html so client routing works.
-      app.MapFallbackToFile("index.html");
-
-      app.Run();
-      EOF
+    script: serve-the-built-client-from-the-server.sh
   - label: Scaffold Vite React (TypeScript) client
     workdir: "{{hostStaging}}"
     run: CI=1 npm create vite@latest client -- --template react-ts </dev/null
@@ -50,46 +31,6 @@ recipe:
   - label: Publish client into server wwwroot
     run: mkdir -p "{{projectDir}}/Server/wwwroot" && cp -r "{{hostStaging}}/client/dist/." "{{projectDir}}/Server/wwwroot/"
   - label: Copy client source into project
-    run: |
-      set -eu
-      cd "{{hostStaging}}/client"
-      tar --exclude=node_modules --exclude=dist -cf - . | (mkdir -p "{{projectDir}}/client" && cd "{{projectDir}}/client" && tar -xf -)
-      # A pipeline reports only its LAST command's status, so a producer that dies half-way still
-      # looks like success and hands back a half-copied project. Steps run under dash, which has no
-      # `pipefail`, so check the one file whose absence makes the result unusable: without a manifest
-      # neither `npm install` nor `npm run dev` can run, and the generated run config cannot work.
-      test -f "{{projectDir}}/client/package.json" || {
-        echo "Copy incomplete: package.json did not reach {{projectDir}}/client." >&2
-        exit 1
-      }
+    script: copy-client-source-into-project.sh
   - label: Configure Build & Run
-    run: |
-      mkdir -p "{{projectDir}}/.jcode"
-      cat > "{{projectDir}}/.jcode/run.yaml" <<'YAML'
-      version: 1
-      name: ASP.NET Core + Vite React (dev)
-      readyPort: 5173
-      terminals:
-        - label: Run
-          command: |
-            clear
-            set -e
-            PROJ="{{projectDir}}"
-            SRV="$HOME/.jcode-run/{{name}}-server"
-            STAGE="$HOME/.jcode-run/{{name}}-client"
-            export npm_config_fund=false npm_config_audit=false
-            CSPROJ=$(ls "$PROJ/Server"/*.csproj | head -1)
-            echo '== J Code: ASP.NET Core + Vite React (dev) =='
-            echo '[1/3] Building server (dotnet build, Debug)...'
-            rm -rf "$SRV"
-            dotnet build "$CSPROJ" -c Debug -o "$SRV" --nologo
-            echo '[2/3] Staging client + installing deps (npm install)...'
-            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "$PROJ/client/." "$STAGE/"
-            ( cd "$STAGE" && npm install )
-            echo '[3/3] Starting server (:5080, background) + Vite client (:5173)...'
-            ( cd "$SRV" && ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' exec dotnet "$(basename "$CSPROJ" .csproj).dll" ) &
-            SRV_PID=$!
-            trap 'kill "$SRV_PID" 2>/dev/null' INT TERM EXIT
-            cd "$STAGE"
-            npm run dev -- --host 0.0.0.0 --port 5173
-      YAML
+    script: configure-build-run.sh

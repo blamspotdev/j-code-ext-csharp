@@ -20,113 +20,11 @@ contributes:
   # {{projectDir}} = project guest root; {{file}}/{{dir}} = the FIRST required file's guest
   # path/dir; {{fileN}}/{{dirN}} (1-based) = each requires glob's first match.
   runConfigPresets:
-    # ASP.NET Core + React (dev): needs a .csproj (the server) AND a package.json (the React
-    # client). Server builds to ext4 (noexec /workspace) and runs the managed DLL; the Vite
-    # client stages to ext4 and serves with HMR. The browser opens the Vite port.
-    - id: aspnet-react-dev
-      label: ASP.NET Core + React (dev)
-      requires: ["**/*.csproj", "**/package.json"]
-      readyPort: 5173
-      terminals:
-        # One command: build the server, stage+install the client, run the server in the background
-        # and the Vite client in the foreground. A trap stops the server when the run stops (Ctrl-C)
-        # or the client exits, so the whole full-stack dev run is a single monitored command.
-        - label: Run
-          command: |
-            clear
-            set -e
-            SRV="$HOME/.jcode-run/aspnet-server"
-            STAGE="$HOME/.jcode-run/aspnet-react-client"
-            export npm_config_fund=false npm_config_audit=false
-            echo '== J Code: ASP.NET Core + React (dev) =='
-            echo '[1/3] Building server (dotnet build, Debug)...'
-            rm -rf "$SRV"
-            dotnet build "{{file1}}" -c Debug -o "$SRV" --nologo
-            echo '[2/3] Staging client + installing deps (npm install)...'
-            rm -rf "$STAGE" && mkdir -p "$STAGE" && cp -a "{{dir2}}/." "$STAGE/"
-            ( cd "$STAGE" && npm install )
-            echo '[3/3] Starting server (:5080, background) + Vite client (:5173)...'
-            ( cd "$SRV" && ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS='http://0.0.0.0:5080' exec dotnet "$(basename "{{file1}}" .csproj).dll" ) &
-            SRV_PID=$!
-            trap 'kill "$SRV_PID" 2>/dev/null' INT TERM EXIT
-            cd "$STAGE"
-            npm run dev -- --host 0.0.0.0 --port 5173
-    # Plain ASP.NET Core / .NET run: any .csproj.
-    - id: dotnet-run
-      label: .NET run (.csproj)
-      requires: ["**/*.csproj"]
-      readyPort: 5080
-      terminals:
-        - label: Run
-          command: |
-            clear
-            set -e
-            OUT="$HOME/.jcode-run/dotnet-run"
-            rm -rf "$OUT"
-            dotnet build "{{file}}" -c Debug -o "$OUT" --nologo
-            cd "$OUT"
-            ASPNETCORE_URLS='http://0.0.0.0:5080' dotnet "$(basename "{{file}}" .csproj).dll"
-    # Whole-solution build.
-    - id: dotnet-sln-build
-      label: .NET solution build
-      requires: ["*.sln"]
-      terminals:
-        - label: Build
-          command: |
-            clear
-            set -e
-            dotnet build "{{file}}" --nologo
-language:
-  id: csharp
-  extensions: [".cs", ".csx"]
-  comment:
-    line: "//"
-    blockStart: "/*"
-    blockEnd: "*/"
-  strings: ["\"", "'"]
-  keywords: [public, private, protected, internal, static, readonly, const, class, struct,
-    interface, enum, namespace, using, void, return, if, else, for, foreach, while, do,
-    switch, case, default, break, continue, new, this, base, null, true, false, async,
-    await, try, catch, finally, throw, get, set, override, virtual, abstract, sealed,
-    partial, is, as, in, out, ref, params, yield, lock, using, record]
-  types: [int, long, short, byte, sbyte, uint, ulong, ushort, bool, char, string, float,
-    double, decimal, object, var, dynamic, void, Task, List, Dictionary, IEnumerable,
-    Span, Array, Nullable]
-  formatter:
-    # Best-effort runtime formatter (runs in the embedded distro). {{file}} is the
-    # guest path. Falls back to the basic rules below when no toolchain is present.
-    command: "dotnet format --include {{file}} 2>/dev/null || true"
-    indent: 4
-    trimTrailingWhitespace: true
-    insertFinalNewline: true
-  completions:
-    - label: cw
-      detail: Console.WriteLine
-      insert: "Console.WriteLine($0);"
-    - label: prop
-      detail: Auto-property
-      insert: "public $1 $2 { get; set; }"
-    - label: ctor
-      detail: Constructor
-      insert: "public $1($2)\n{\n    $0\n}"
-    - label: forr
-      detail: for loop
-      insert: "for (int i = 0; i < $1; i++)\n{\n    $0\n}"
-    - label: foreach
-      detail: foreach loop
-      insert: "foreach (var $1 in $2)\n{\n    $0\n}"
-    - label: cls
-      detail: Class
-      insert: "public class $1\n{\n    $0\n}"
-    - label: asyncm
-      detail: Async method
-      insert: "public async Task $1()\n{\n    $0\n}"
-  helpers:
-    - title: Add using
-      snippet: "using $1;"
-    - title: Null-coalescing guard
-      snippet: "$1 ??= $2;"
-
+    - aspnet-react-dev
+    - dotnet-run
+    - dotnet-sln-build
+languages:
+  - csharp
 # --- header fields merged from extension.jehm ---
 shortDescription: Coding suggestions, a basic formatter, helpers, and .NET project templates for C#.
 minJCodeVersion: 1.0.0

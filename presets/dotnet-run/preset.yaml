@@ -1,0 +1,8 @@
+# Plain ASP.NET Core / .NET run: any .csproj.
+id: dotnet-run
+label: .NET run (.csproj)
+requires: ["**/*.csproj"]
+readyPort: 5080
+terminals:
+  - label: Run
+    script: run.sh
