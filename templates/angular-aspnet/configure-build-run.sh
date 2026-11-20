@@ -29,5 +29,7 @@ terminals:
       SRV_PID=\$!
       trap 'kill "\$SRV_PID" 2>/dev/null' INT TERM EXIT
       cd "\$STAGE"
-      npx ng serve --host 0.0.0.0 --port 4200 --disable-host-check
+      # Any Host header, as --disable-host-check once allowed: today's dev server rejects that flag
+      # as an unknown argument, and without this refuses every host name that is not an IP.
+      npx ng serve --host 0.0.0.0 --port 4200 --allowed-hosts=true
 YAML
