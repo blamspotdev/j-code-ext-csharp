@@ -9,12 +9,14 @@ inputs:
     type: select
     # Live from installed SDKs; falls back to the static list below when the runtime isn't ready.
     optionsCommand: "/usr/local/bin/dotnet --list-sdks 2>/dev/null | awk '{print $1}' | cut -d. -f1-2 | sort -Vru | sed 's/^/net/'"
-    options: ["net10.0", "net9.0", "net8.0"]
+    # What the dotnet toolchain installs by default: the LTS and STS lines. 8.0 and 9.0 reached end of
+    # support on 2026-11-10.
+    options: ["net11.0", "net10.0"]
     default: "net10.0"
 recipe:
   - label: Create Blazor Web App
-    run: dotnet new blazor -o "{{projectDir}}"
-  - label: Set target framework
-    script: set-target-framework.sh
+    # Generated for the chosen framework, not retargeted afterwards: `dotnet new` otherwise runs the
+    # newest installed SDK's template, which is written for that SDK's framework.
+    run: dotnet new blazor -o "{{projectDir}}" --framework "{{dotnetTfm}}"
   - label: Configure Build & Run
     script: configure-build-run.sh
